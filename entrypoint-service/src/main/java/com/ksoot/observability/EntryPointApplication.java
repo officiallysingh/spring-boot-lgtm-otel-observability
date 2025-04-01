@@ -1,8 +1,6 @@
 package com.ksoot.observability;
 
-import feign.Capability;
-import feign.micrometer.MicrometerCapability;
-import io.micrometer.core.instrument.MeterRegistry;
+import feign.Logger;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
@@ -22,8 +20,9 @@ public class EntryPointApplication {
     return new RestTemplate();
   }
 
-//  @Bean
-//  public Capability capability(final MeterRegistry registry) {
-//    return new MicrometerCapability(registry);
-//  }
+  //  @Bean
+  //  public Capability capability(final MeterRegistry registry) {
+  //    return new MicrometerCapability(registry);
+  //  }
+
 }
