@@ -30,9 +30,6 @@
         <zalando-logbook.version>3.11.0</zalando-logbook.version>
 
         <fmt-maven-plugin.version>2.25</fmt-maven-plugin.version>
-<!--        <maven.compiler.source>${java.version}</maven.compiler.source>-->
-<!--        <maven.compiler.target>${java.version}</maven.compiler.target>-->
-<!--        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>-->
     </properties>
 
     <dependencyManagement>

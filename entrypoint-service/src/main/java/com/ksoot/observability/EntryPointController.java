@@ -28,7 +28,7 @@ public class EntryPointController {
 
   @GetMapping("/entry-point/external-call-edge-service")
   public String externalCall() {
-    log.warn("Making an external API call to Edge Service");
+    log.info("Making an external API call to Edge Service");
     this.meterRegistry.counter("external_calls").increment();
     try {
       String response = this.edgeClient.edgeEndpoint();
@@ -42,7 +42,7 @@ public class EntryPointController {
 
   @GetMapping("/entry-point/external-message-edge-service")
   public String externalMessage() {
-    log.warn("Writing Kafka message to be received by Edge Service");
+    log.info("Writing Kafka message to be received by Edge Service");
     this.meterRegistry.counter("external_messages").increment();
     try {
       final SendResult<String, String> kafkaResponse =

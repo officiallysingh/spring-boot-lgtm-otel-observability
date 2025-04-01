@@ -110,14 +110,16 @@ otel:
   metric.export.interval: 10s #Export metrics each 10 seconds
   instrumentation:
     micrometer.enabled: true #Enabe Micrometer metrics bridge
+    common:
+      default-enabled: true
     kafka:
       enabled: true
       autoconfigure-interceptor: true
 #    logback-mdc:
 #      enabled: true
-#    common:
-#      default-enabled: true
-#  propagators: tracecontext,baggage,b3
+#  propagators:
+#    - tracecontext
+#    - baggage
 
 server:
   port: 8090
@@ -127,9 +129,8 @@ server:
 logbook:
   filter:
     enabled: true
-  filters:
-    body:
-      default-enabled: true
+  format:
+    style: http
   predicate.exclude[0].path: /actuator/**
 
 logging:
@@ -145,4 +146,5 @@ logging:
     '[org.apache.kafka.clients]': error
 #    '[com.ksoot.observability.EdgeClient]': debug
     '[org.zalando.logbook]': TRACE
+    '[feign.micrometer]': debug
 debug: false

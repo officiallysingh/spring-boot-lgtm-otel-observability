@@ -46,8 +46,18 @@ otelcol.processor.transform "default" {
 
   output {
     metrics = [otelcol.processor.batch.default.input]
-    traces  = [otelcol.processor.batch.default.input]
+    traces = [
+      otelcol.connector.servicegraph.default.input,
+      otelcol.processor.batch.default.input,
+    ]
     logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.connector.servicegraph "default" {
+  dimensions = ["http.method", "http.target"]
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
   }
 }
 
