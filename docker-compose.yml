@@ -1,0 +1,225 @@
+name: observability
+
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    command: [ "--replSet", "rs0", "--bind_ip_all", "--port", "27017" ]
+    ports:
+      - "27017:27017"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      retries: 30
+    volumes:
+      - "mongo_data:/data/db"
+      - "mongo_config:/data/configdb"
+    networks:
+      - observability
+
+  #    postgres:
+  #        image: postgres:latest
+  #        hostname: postgres
+  #        container_name: postgres
+  #        environment:
+  #            POSTGRES_DB: spark_jobs_db
+  #            POSTGRES_USER: postgres
+  #            POSTGRES_PASSWORD: admin
+  #        ports:
+  #            - "5432:5432"
+  #        volumes:
+  #            - postgres_data:/var/lib/postgresql/data
+  #        networks:
+  #            - observability
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zookeeper:2888:3888
+    networks:
+      - observability
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.2
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+      - "9999:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+    depends_on:
+      - zookeeper
+    networks:
+      - observability
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8100:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_ZOOKEEPER: "zookeeper:2181"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:29092"
+      KAFKA_BROKERCONNECT: "kafka:29092"
+      KAFKA_CLUSTERS_0_METRICS_PORT: 9997
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    depends_on:
+      - kafka
+    networks:
+      - observability
+
+  # Tempo runs as user 10001, and docker compose creates the volume as root.
+  # As such, we need to chown the volume in order for Tempo to start correctly.
+  init:
+    image: &tempoImage grafana/tempo:latest
+    user: root
+    entrypoint:
+      - "chown"
+      - "10001:10001"
+      - "/var/tempo"
+    volumes:
+      #      - ./tempo-data:/var/tempo
+      - "tempo_data:/var/tempo"
+    networks:
+      - observability
+
+  tempo:
+    image: *tempoImage
+    command: [ "-config.file=/etc/tempo.yml" ]
+    volumes:
+      - ./observability/config/tempo/tempo.yml:/etc/tempo.yml
+    #            - "tempo_data:/var/tempo"
+    ports:
+      - "3200" # tempo
+      - "4317" # otlp grpc
+    depends_on:
+      - init
+    networks:
+      - observability
+
+  grafana:
+    image: grafana/grafana:11.5.1
+    restart: on-failure
+    command:
+      - --config=/etc/grafana-config/grafana.ini
+    volumes:
+      - ./observability/config/grafana:/etc/grafana-config
+      - ./observability/config/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/config/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    #            - ./observability/configgrafana//alerting:/etc/grafana/provisioning/alerting:ro
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/healthz" ]
+      interval: 1s
+      start_interval: 0s
+      timeout: 10s
+      retries: 5
+    networks:
+      - observability
+
+  mimir:
+    image: grafana/mimir:2.14.3
+    restart: on-failure
+    command:
+      - -config.file=/etc/mimir-config/mimir.yml
+    volumes:
+      - ./observability/config/mimir/mimir.yml:/etc/mimir-config/mimir.yml
+    ports:
+      - "9009:9009"
+    networks:
+      - observability
+
+  loki:
+    image: grafana/loki:3.4.1
+    restart: on-failure
+    ports:
+      - "3100:3100"
+    networks:
+      - observability
+
+  pyroscope:
+    image: grafana/pyroscope:1.5.0
+    restart: on-failure
+    ports:
+      - "4040:4040"
+    networks:
+      - observability
+  #    beyla:
+  #        image: grafana/beyla:latest
+  #        pid: "service:goblog"
+  #        privileged: true
+  #        environment:
+  #            BEYLA_TRACE_PRINTER: text
+  #            BEYLA_OPEN_PORT: 8443
+  alloy:
+    image: grafana/alloy:v1.5.1
+    pull_policy: always
+    restart: on-failure
+    volumes:
+      - ./observability/config/alloy/config.alloy:/etc/alloy/config.alloy
+    depends_on:
+      #            - beyla
+      - mimir
+      - loki
+      - tempo
+      - pyroscope
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --stability.level=experimental # Enable all functionality
+    ports:
+      - "12345:12345"
+      - "4318:4318"
+      - "4317:4317"
+    networks:
+      - observability
+
+  # Add your Spring Boot application service
+#    spring-boot-observability-demo:
+#        image: spring-boot-observability-demo:0.0.1
+#        extra_hosts: ['host.docker.internal:host-gateway']
+#        restart: on-failure
+#        ports:
+#            - "8090:8090"
+##        environment:
+##            - OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy:4318
+#        networks:
+#            - observability
+
+volumes:
+  mongo_data:
+  mongo_config:
+  tempo_data:
+
+networks:
+  observability:
+    driver: bridge
+

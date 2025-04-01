@@ -1,0 +1,126 @@
+# ===================================================================
+# Spring Boot configuration.
+#
+# This configuration will be overridden by the Spring profile you use,
+# for example application-dev.yml if you use the "dev" profile.
+#
+# Full reference for Standard Spring Boot properties is available at:
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+# set -Dspring.profiles.active=<dev|sit|int> as JVM argument to run in desired profile
+# If no profile is specified explicitly, application will fall back to default profile, which is "local"
+
+spring:
+  application:
+    name: entrypoint-service
+  #  autoconfigure:
+  #    exclude: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+  devtools:
+    add-properties: false
+    restart:
+      enabled: false
+      exclude: logs/*,application.log,*.log,*.log.*
+  main:
+    log-startup-info: true
+  mvc:
+    pathmatch:
+      matching-strategy: ant-path-matcher
+    problemdetails:
+      enabled: true
+  task:
+    execution:
+      pool:
+        queue-capacity: 10000
+        core-size: 8
+        keep-alive: 60s
+        max-size: 64
+  cloud:
+    openfeign:
+      micrometer:
+        enabled: true
+  #------------------------- Kafka configuration -------------------------
+  kafka:
+    producer:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: entrypoint-service-group
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest
+    admin:
+      auto-create: true
+    listener:
+      observation-enabled: true
+    template:
+      observation-enabled: true
+      default-topic: observability-topic
+
+springdoc:
+  show-actuator: true
+  group-configs:
+    - group: actuator
+      display-name: Actuator
+      paths-to-match: /actuator/**
+    - group: entry-point
+      display-name: Entry Point
+      paths-to-match: /**
+      paths-to-exclude: /actuator/**
+  swagger-ui:
+    syntaxHighlight:
+      activated: true
+
+#------------------------- Actuators configuration -------------------------
+# If not specified '/actuator' is taken as default. If specified must start with '/'
+#management.endpoints.web.base-path=/
+# Set it as "*", if you want to expose all actuator endpoints
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+    env:
+      show-values: "always"
+
+otel:
+  exporter:
+    otlp:
+      endpoint: http://localhost:4318
+  logs.exporter: otlp
+  metrics.exporter: otlp
+  traces.exporter: otlp
+#  logs.exporter: console
+#  metrics.exporter: console
+#  traces.exporter: console
+  #Configure metrics generation
+  metric.export.interval: 10s #Export metrics each 10 seconds
+  instrumentation:
+    micrometer.enabled: true #Enabe Micrometer metrics bridge
+    kafka:
+      enabled: true
+      autoconfigure-interceptor: true
+#    logback-mdc:
+#      enabled: true
+    common:
+      default-enabled: true
+  propagators: tracecontext,baggage,b3,b3multi
+
+server:
+  port: 8090
+  forward-headers-strategy: framework
+#  servlet:
+#      context-path:
+#logbook:
+#  filter:
+#    enabled: true
+
+logging:
+  level:
+    ROOT: info
+    '[org.apache.kafka.clients.admin.KafkaAdminClient]': error
+    '[org.apache.kafka.clients]': error
+debug: false

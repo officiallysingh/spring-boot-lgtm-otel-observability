@@ -1,0 +1,115 @@
+logging {
+  level  = "debug"
+  format = "logfmt"
+}
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.transform.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.transform.default.input]
+  }
+}
+
+otelcol.processor.transform "default" {
+  metric_statements {
+    context = "resource"
+    statements = [
+      `delete_key(attributes, "process_command_args")`,
+      `delete_key(attributes, "process.command_args")`,
+      `delete_key(attributes, "process.command.args")`,
+    ]
+  }
+  trace_statements {
+    context = "resource"
+    statements = [
+      `delete_key(attributes, "process_command_args")`,
+      `delete_key(attributes, "process.command_args")`,
+      `delete_key(attributes, "process.command.args")`,
+    ]
+  }
+  log_statements {
+    context = "resource"
+    statements = [
+      `delete_key(attributes, "process_command_args")`,
+      `delete_key(attributes, "process.command_args")`,
+      `delete_key(attributes, "process.command.args")`,
+    ]
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    traces = [
+      otelcol.connector.servicegraph.default.input,
+      otelcol.processor.batch.default.input,
+    ]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.connector.servicegraph "default" {
+  dimensions = ["http.method", "http.target"]
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    metrics = [otelcol.exporter.prometheus.default.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    logs    = [otelcol.exporter.loki.default.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+    client {
+        endpoint = "tempo:4317"
+        tls {
+            insecure             = true
+            insecure_skip_verify = true
+        }
+    }
+}
+
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.remote_write "mimir" {
+	endpoint {
+		url = "http://mimir:9009/api/v1/push"
+	}
+}
+
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+	endpoint {
+		url = "http://loki:3100/loki/api/v1/push"
+	}
+}
+
+// Collect profiles from the local running Alloy instance and forward to
+// Pyroscope.
+pyroscope.scrape "default" {
+  targets = [
+    {"__address__" = "alloy:12345", "service_name" = "alloy"},
+  ]
+  forward_to = [pyroscope.write.pyroscope.receiver]
+}
+
+pyroscope.write "pyroscope" {
+	endpoint {
+		url = "http://pyroscope:4040"
+	}
+}
