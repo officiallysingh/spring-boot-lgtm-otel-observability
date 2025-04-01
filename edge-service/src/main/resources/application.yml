@@ -111,9 +111,17 @@ server:
   forward-headers-strategy: framework
 #  servlet:
 #      context-path:
+
 logging:
+  logback:
+    rollingpolicy:
+      clean-history-on-start: true
+  file:
+    path: logs
+    name: ${logging.file.path}/edge.log
   level:
     ROOT: info
     '[org.apache.kafka.clients.admin.KafkaAdminClient]': error
     '[org.apache.kafka.clients]': error
+    '[org.zalando.logbook]': TRACE
 debug: false

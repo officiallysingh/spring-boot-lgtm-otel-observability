@@ -41,7 +41,6 @@ spring:
           default.loggerLevel:  full
       micrometer:
         enabled: true
-#feign.client.config.default.loggerLevel:  full
 
   #------------------------- Kafka configuration -------------------------
   kafka:
@@ -144,6 +143,6 @@ logging:
     ROOT: info
     '[org.apache.kafka.clients.admin.KafkaAdminClient]': error
     '[org.apache.kafka.clients]': error
-    '[com.ksoot.observability.EdgeClient]': debug
+#    '[com.ksoot.observability.EdgeClient]': debug
     '[org.zalando.logbook]': TRACE
 debug: false
