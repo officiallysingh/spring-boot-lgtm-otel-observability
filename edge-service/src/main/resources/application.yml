@@ -112,6 +112,17 @@ server:
 #  servlet:
 #      context-path:
 
+# -------------- Logging configuration ---------------------
+logbook:
+  filter:
+    enabled: true
+  format.style: http
+  #  filters:
+  #    body:
+  #      default-enabled: true
+  predicate.exclude:
+    - path: /actuator/**
+
 logging:
   logback:
     rollingpolicy:
@@ -123,5 +134,5 @@ logging:
     ROOT: info
     '[org.apache.kafka.clients.admin.KafkaAdminClient]': error
     '[org.apache.kafka.clients]': error
-    '[org.zalando.logbook]': TRACE
+#    '[org.zalando.logbook]': TRACE
 debug: false

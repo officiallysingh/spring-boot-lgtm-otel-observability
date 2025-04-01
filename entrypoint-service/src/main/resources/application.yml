@@ -36,11 +36,13 @@ spring:
         max-size: 64
   cloud:
     openfeign:
-      client:
-        config:
-          default.loggerLevel:  full
+#      client:
+#        config:
+#          default.loggerLevel:  full
       micrometer:
         enabled: true
+#      okhttp:
+#        enabled: true
 
   #------------------------- Kafka configuration -------------------------
   kafka:
@@ -89,9 +91,9 @@ management:
       show-details: always
     env:
       show-values: "always"
-#  tracing:
-#    baggage:
-#      enabled: true
+  tracing:
+    baggage:
+      enabled: true
 
 otel:
   #  To Disable the OpenTelemetry SDK autoconfiguration, preferably in local profile
@@ -124,13 +126,17 @@ server:
   forward-headers-strategy: framework
 #  servlet:
 #      context-path:
+
+# -------------- Logging configuration ---------------------
 logbook:
   filter:
     enabled: true
-  filters:
-    body:
-      default-enabled: true
-  predicate.exclude[0].path: /actuator/**
+  format.style: http
+#  filters:
+#    body:
+#      default-enabled: true
+  predicate.exclude:
+    - path: /actuator/**
 
 logging:
   logback:
@@ -143,6 +149,5 @@ logging:
     ROOT: info
     '[org.apache.kafka.clients.admin.KafkaAdminClient]': error
     '[org.apache.kafka.clients]': error
-#    '[com.ksoot.observability.EdgeClient]': debug
-    '[org.zalando.logbook]': TRACE
+#    '[org.zalando.logbook]': TRACE
 debug: false
