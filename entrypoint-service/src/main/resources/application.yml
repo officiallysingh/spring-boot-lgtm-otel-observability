@@ -89,9 +89,6 @@ management:
       show-details: always
     env:
       show-values: "always"
-#  tracing:
-#    baggage:
-#      enabled: true
 
 otel:
   #  To Disable the OpenTelemetry SDK autoconfiguration, preferably in local profile
@@ -103,9 +100,9 @@ otel:
   logs.exporter: otlp
   metrics.exporter: otlp
   traces.exporter: otlp
-#  logs.exporter: console
+#  logs.exporter: none
 #  metrics.exporter: console
-#  traces.exporter: console
+#  traces.exporter: none
   #Configure metrics generation
   metric.export.interval: 10s #Export metrics each 10 seconds
   instrumentation:
@@ -117,9 +114,18 @@ otel:
       autoconfigure-interceptor: true
 #    logback-mdc:
 #      enabled: true
-#  propagators:
-#    - tracecontext
-#    - baggage
+  propagators:
+    - tracecontext
+    - baggage
+  resource:
+    attributes:
+      service.name: ${spring.application.name}
+#      host.name: macbook
+      service.version: 1.0.0
+      deployment.environment: local
+      process.command_args: ""
+#  service:
+#    name: ${spring.application.name}
 
 server:
   port: 8090
