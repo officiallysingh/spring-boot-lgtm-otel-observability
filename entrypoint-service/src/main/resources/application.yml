@@ -89,7 +89,14 @@ management:
       show-details: always
     env:
       show-values: "always"
+  metrics:
+    tags:
+      service.name: ${otel.resource.attributes.service.name}
+      host.name: ${otel.resource.attributes.host.name}
+      service.version: ${otel.resource.attributes.service.version}
+      deployment.environment: ${otel.resource.attributes.deployment.environment}
 
+# ------------- OpenTelemetry configuration --------------
 otel:
   #  To Disable the OpenTelemetry SDK autoconfiguration, preferably in local profile
 #  sdk:
@@ -112,7 +119,9 @@ otel:
     kafka:
       enabled: true
       autoconfigure-interceptor: true
-#    mongo:
+#    runtime-telemetry-java17:
+#      enable-all: true
+  #    mongo:
 #      enabled: true
 #      statement-sanitizer:
 #        enabled: true
@@ -122,18 +131,18 @@ otel:
   resource:
     attributes:
       service.name: ${spring.application.name}
-#      host.name: macbook
+      host.name: localhost
       service.version: 1.0.0
       deployment.environment: local
       process.command_args: ""
-#  service:
-#    name: ${spring.application.name}
 
 server:
   port: 8090
   forward-headers-strategy: framework
 #  servlet:
 #      context-path:
+
+# ------------- Logging configuration --------------
 logbook:
   filter:
     enabled: true

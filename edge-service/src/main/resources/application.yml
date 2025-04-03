@@ -83,28 +83,52 @@ management:
       show-details: always
     env:
       show-values: "always"
+  metrics:
+    tags:
+      service.name: ${otel.resource.attributes.service.name}
+      host.name: ${otel.resource.attributes.host.name}
+      service.version: ${otel.resource.attributes.service.version}
+      deployment.environment: ${otel.resource.attributes.deployment.environment}
 
+# ------------- OpenTelemetry configuration --------------
 otel:
+  #  To Disable the OpenTelemetry SDK autoconfiguration, preferably in local profile
+  #  sdk:
+  #    disabled: true
   exporter:
     otlp:
       endpoint: http://localhost:4318
   logs.exporter: otlp
   metrics.exporter: otlp
   traces.exporter: otlp
-#  logs.exporter: console
-#  metrics.exporter: console
-#  traces.exporter: console
+  #  logs.exporter: none
+  #  metrics.exporter: console
+  #  traces.exporter: none
   #Configure metrics generation
   metric.export.interval: 10s #Export metrics each 10 seconds
   instrumentation:
     micrometer.enabled: true #Enabe Micrometer metrics bridge
+    common:
+      default-enabled: true
     kafka:
       enabled: true
       autoconfigure-interceptor: true
-    logback-mdc:
-      enabled: true
-    common:
-      default-enabled: true
+  #    runtime-telemetry-java17:
+  #      enable-all: true
+  #    mongo:
+  #      enabled: true
+  #      statement-sanitizer:
+  #        enabled: true
+  propagators:
+    - tracecontext
+    - baggage
+  resource:
+    attributes:
+      service.name: ${spring.application.name}
+      host.name: localhost
+      service.version: 1.0.0
+      deployment.environment: local
+      process.command_args: ""
 
 server:
   port: 8091
