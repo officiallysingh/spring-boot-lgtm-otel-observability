@@ -1,0 +1,23 @@
+# ===================================================================
+# Spring Boot configuration.
+#
+# This configuration will be overridden by the Spring profile you use,
+# for example application-dev.yml if you use the "dev" profile.
+#
+# Full reference for Standard Spring Boot properties is available at:
+# http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
+# ===================================================================
+# set -Dspring.profiles.active=<dev|sit|int> as JVM argument to run in desired profile
+# If no profile is specified explicitly, application will fall back to default profile, which is "local"
+
+spring:
+#------------------------- Kafka configuration -------------------------
+  kafka:
+    consumer:
+      properties:
+        max.poll.interval.ms: 900000
+        max.poll.records: 20
+otel:
+#  To Disable the OpenTelemetry SDK autoconfiguration, preferably in local profile
+  sdk:
+    disabled: true

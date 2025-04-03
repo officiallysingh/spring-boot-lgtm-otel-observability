@@ -44,12 +44,12 @@ spring:
 
   #------------------------- Kafka configuration -------------------------
   kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
     consumer:
-      group-id: entrypoint-service-group
       bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -112,8 +112,10 @@ otel:
     kafka:
       enabled: true
       autoconfigure-interceptor: true
-#    logback-mdc:
+#    mongo:
 #      enabled: true
+#      statement-sanitizer:
+#        enabled: true
   propagators:
     - tracecontext
     - baggage
@@ -150,7 +152,5 @@ logging:
     ROOT: info
     '[org.apache.kafka.clients.admin.KafkaAdminClient]': error
     '[org.apache.kafka.clients]': error
-#    '[com.ksoot.observability.EdgeClient]': debug
-    '[org.zalando.logbook]': TRACE
-    '[feign.micrometer]': debug
+#    '[org.zalando.logbook]': TRACE
 debug: false
